@@ -3,296 +3,299 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>President Simulator - Republique</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="theme-color" content="#10141b">
+  <title>President Simulator Demo</title>
+  <style>
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      color: #edf3f8;
+      background: #0e1218;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      background:
+        radial-gradient(circle at 12% 0%, rgba(115, 183, 255, 0.14), transparent 34%),
+        linear-gradient(115deg, rgba(28, 49, 62, 0.42), rgba(14, 18, 24, 0.24) 44%, rgba(60, 42, 34, 0.23)),
+        #0e1218;
+    }
+    .hidden { display: none !important; }
+    .topbar, .setup-card, .hero-copy, .briefing-visual, .side-panel, .panel, .map-panel, .decision-panel, .week-card, .advisor-panel, .hud-card {
+      background: rgba(23, 29, 37, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+    }
+    button, input, select {
+      font: inherit;
+    }
+  </style>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles/premium-ui.css">
 </head>
 <body>
-  <div class="app-shell">
+  <div id="app" class="app-shell">
     <header class="topbar">
-      <div class="brand-lockup">
-        <div class="seal" aria-hidden="true">RF</div>
+      <div class="brand">
+        <span class="seal">RF</span>
         <div>
-          <p class="eyebrow">Simulation institutionnelle</p>
+          <p class="eyebrow">Demo strategique</p>
           <h1>President Simulator</h1>
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="icon-button" id="pauseBtn" title="Pause ou reprise" aria-label="Pause ou reprise">
-          <span id="pauseIcon">II</span>
-        </button>
-        <div class="speed-control" role="group" aria-label="Vitesse de simulation">
-          <button class="speed-btn active" data-speed="1">x1</button>
-          <button class="speed-btn" data-speed="4">x4</button>
-          <button class="speed-btn" data-speed="12">x12</button>
-        </div>
-        <button class="ghost-button" id="saveBtn">Sauver</button>
-        <button class="danger-button" id="resetBtn">Reinitialiser</button>
+        <button id="saveBtn" class="soft-button" type="button">Sauvegarder</button>
+        <button id="resetBtn" class="danger-button" type="button">Nouvelle partie</button>
       </div>
     </header>
 
-    <main>
-      <section id="setupView" class="setup-view">
-        <div class="hero-panel">
-          <div class="hero-visual">
-            <canvas id="introCanvas" width="900" height="520" aria-label="Carte strategique stylisee"></canvas>
-            <div class="classified-stamp">CONFIDENTIEL DEFENSE</div>
+    <section id="setupView" class="setup-view">
+      <div class="setup-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">France fictive, institutions credibles</p>
+          <h2>Gouverner sans pouvoir tout controler.</h2>
+          <p>
+            Choisissez votre president, vos promesses de campagne et votre scenario de depart.
+            La partie avance par semaines : briefing, arbitrage, gouvernement, medias, consequences.
+          </p>
+        </div>
+        <div class="briefing-visual" aria-hidden="true">
+          <canvas id="heroCanvas" width="900" height="540"></canvas>
+          <span class="classified">NOTE ELYSEE</span>
+        </div>
+      </div>
+
+      <form id="setupForm" class="setup-card">
+        <div class="form-grid">
+          <label>
+            Nom du president
+            <input id="candidateName" maxlength="34" value="Camille Delmas" autocomplete="off">
+          </label>
+          <label>
+            Mouvement politique
+            <input id="movementName" maxlength="34" value="Nouvelle Concorde" autocomplete="off">
+          </label>
+          <label>
+            Seed de partie
+            <input id="seedInput" maxlength="24" value="elysee-2026" autocomplete="off">
+          </label>
+          <label>
+            Positionnement ideologique
+            <select id="ideologySelect"></select>
+          </label>
+          <label>
+            Style de leadership
+            <select id="leadershipSelect"></select>
+          </label>
+          <label>
+            Point faible narratif
+            <select id="weaknessSelect"></select>
+          </label>
+          <label>
+            Promesse centrale
+            <select id="centralPromiseSelect"></select>
+          </label>
+        </div>
+
+        <div>
+          <div class="section-title">
+            <span>Programme de campagne</span>
+            <small>Ces promesses aident a gagner, puis deviennent des chaines politiques.</small>
           </div>
-          <div class="hero-copy">
-            <p class="eyebrow">Campagne, pouvoir, crises, heritage</p>
-            <h2>Creer votre candidat fictif et conquérir l'Elysee.</h2>
-            <p>
-              Cette demo compresse une campagne presidentielle puis les premiers mois du mandat.
-              Chaque decision change l'opinion, le budget, l'entourage, les fronts militaires,
-              la diplomatie et votre niveau global.
-            </p>
+          <div id="promiseList" class="promise-list"></div>
+        </div>
+
+        <button class="primary-button" type="submit">Lancer la campagne</button>
+      </form>
+    </section>
+
+    <section id="gameView" class="game-view hidden">
+      <aside class="side-panel">
+        <div class="president-card">
+          <div id="avatar" class="avatar">CD</div>
+          <div>
+            <p id="scenarioLabel" class="eyebrow">Majorite relative</p>
+            <h2 id="leaderName">Camille Delmas</h2>
+            <p id="movementLabel">Nouvelle Concorde</p>
           </div>
         </div>
 
-        <form class="candidate-form" id="candidateForm">
-          <div class="form-grid">
-            <label>
-              Nom du candidat
-              <input id="candidateName" maxlength="34" value="Camille Delmas" autocomplete="off">
-            </label>
-            <label>
-              Mouvement politique
-              <input id="movementName" maxlength="34" value="Nouvelle Concorde" autocomplete="off">
-            </label>
-            <label>
-              Style de leadership
-              <select id="leadershipStyle">
-                <option value="technocrate">Technocrate reformateur</option>
-                <option value="regalien">Regalien strategique</option>
-                <option value="social">Social-protecteur</option>
-                <option value="ecologie">Ecologie industrielle</option>
-                <option value="souverain">Souverain pragmatique</option>
-              </select>
-            </label>
-            <label>
-              Point faible narratif
-              <select id="weakness">
-                <option value="vie-privee">Vie privee fragile</option>
-                <option value="finance">Soupcons de financement</option>
-                <option value="arrogance">Image arrogante</option>
-                <option value="experience">Experience limitee</option>
-                <option value="alliances">Alliances instables</option>
-              </select>
-            </label>
+        <nav id="mainTabs" class="tabs" aria-label="Navigation principale">
+          <button class="tab active" data-tab="dashboard" type="button">Situation</button>
+          <button class="tab" data-tab="assembly" type="button">Assemblee</button>
+          <button class="tab" data-tab="budget" type="button">Budget</button>
+          <button class="tab" data-tab="actors" type="button">Acteurs</button>
+          <button class="tab" data-tab="memory" type="button">Memoire</button>
+        </nav>
+
+        <div class="week-card">
+          <div class="week-head">
+            <span id="weekLabel">Semaine 1</span>
+            <strong id="phaseLabel">Briefing</strong>
+          </div>
+          <div id="phaseSteps" class="phase-steps"></div>
+          <button id="nextPhaseBtn" class="primary-button" type="button">Commencer le briefing</button>
+        </div>
+
+        <div class="advisor-panel">
+          <div class="section-title compact-title">
+            <span>Conseillers</span>
+            <small>avis contradictoires</small>
+          </div>
+          <div id="advisorList" class="advisor-list"></div>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <section id="hud" class="hud" aria-label="Indicateurs principaux"></section>
+
+        <section id="dashboardPanel" class="tab-panel active">
+          <div class="command-grid">
+            <section class="map-panel">
+              <canvas id="situationCanvas" width="1100" height="620" aria-label="Carte de situation politique"></canvas>
+              <div class="map-legend">
+                <span id="mapHeadline">Briefing de la semaine</span>
+                <strong id="riskHeadline">Aucun arbitrage</strong>
+              </div>
+            </section>
+
+            <section class="decision-panel">
+              <div class="section-title">
+                <span id="briefingTitle">Briefing de la semaine</span>
+                <small id="briefingMeta">attente du premier dossier</small>
+              </div>
+              <article id="eventCard" class="event-card"></article>
+            </section>
           </div>
 
-          <div class="doctrine-grid">
-            <label>
-              Economie
-              <input type="range" id="doctrineEconomy" min="0" max="100" value="55">
-              <span>Etat investisseur / marche regule</span>
-            </label>
-            <label>
-              Securite
-              <input type="range" id="doctrineSecurity" min="0" max="100" value="62">
-              <span>Prevention / fermete</span>
-            </label>
-            <label>
-              Diplomatie
-              <input type="range" id="doctrineDiplomacy" min="0" max="100" value="58">
-              <span>Autonomie / alliances</span>
-            </label>
-            <label>
-              Climat
-              <input type="range" id="doctrineClimate" min="0" max="100" value="48">
-              <span>Transition / industrie</span>
-            </label>
-          </div>
+          <aside id="dashboardAside" class="dashboard-aside"></aside>
 
-          <button class="primary-button" type="submit">Lancer la campagne</button>
-        </form>
-      </section>
+          <section id="decisionReceipt" class="receipt-panel hidden"></section>
 
-      <section id="gameView" class="game-view hidden">
-        <aside class="left-rail">
-          <div class="president-card">
-            <div class="avatar" id="avatar">CD</div>
-            <div>
-              <p class="eyebrow" id="phaseLabel">Campagne presidentielle</p>
-              <h2 id="leaderName">Camille Delmas</h2>
-              <p id="movementLabel">Nouvelle Concorde</p>
+          <section class="two-column">
+            <div class="panel">
+              <div class="section-title">
+                <span>Journal des decisions</span>
+                <small>historique politique</small>
+              </div>
+              <div id="decisionJournal" class="journal-list"></div>
             </div>
-          </div>
-
-          <nav class="tabs" aria-label="Sections du simulateur">
-            <button class="tab active" data-tab="overview">Tableau</button>
-            <button class="tab" data-tab="budget">Budget</button>
-            <button class="tab" data-tab="war">Defense</button>
-            <button class="tab" data-tab="diplomacy">Voyages</button>
-            <button class="tab" data-tab="cabinet">Entourage</button>
-          </nav>
-
-          <div class="date-panel">
-            <p class="eyebrow">Horloge politique</p>
-            <strong id="dateLabel">Semaine 1</strong>
-            <div class="progress-track">
-              <span id="timeProgress"></span>
-            </div>
-            <p id="clockHint">Une semaine de campagne avance automatiquement.</p>
-          </div>
-
-          <div class="level-panel">
-            <div class="level-head">
-              <span>Niveau global</span>
-              <strong id="globalLevel">1</strong>
-            </div>
-            <div class="progress-track large">
-              <span id="levelProgress"></span>
-            </div>
-            <p id="levelFormula">Popularite, succes, stabilite et influence composent le niveau.</p>
-          </div>
-
-          <div class="mission-panel">
-            <div class="panel-title">
-              <span>Objectifs actifs</span>
-              <small id="missionTimer">renouvellement quotidien</small>
-            </div>
-            <div id="missionsList"></div>
-          </div>
-        </aside>
-
-        <section class="center-stage">
-          <div class="ticker" id="newsTicker">La redaction politique attend le premier meeting.</div>
-
-          <section class="metric-grid" id="metricsGrid"></section>
-
-          <section class="tab-panel active" id="overviewPanel">
-            <div class="war-room">
-              <div class="map-frame">
-                <canvas id="mapCanvas" width="980" height="620" aria-label="Carte de situation"></canvas>
-                <div class="map-caption">
-                  <span>Carte temps reel</span>
-                  <strong id="mapMode">Campagne nationale</strong>
-                </div>
+            <div class="panel">
+              <div class="section-title">
+                <span>Fin de semaine</span>
+                <small>effets differes</small>
               </div>
-              <div class="decision-stack">
-                <div class="panel-title">
-                  <span id="decisionTitle">Decisions disponibles</span>
-                  <small id="decisionSubtitle">choisissez avec prudence</small>
-                </div>
-                <div id="actionsList" class="actions-list"></div>
-              </div>
-            </div>
-
-            <div class="two-column">
-              <div class="document-panel">
-                <div class="panel-title">
-                  <span>Evenement en cours</span>
-                  <small id="eventCategory">situation</small>
-                </div>
-                <div id="eventCard" class="event-card empty">
-                  <p>Aucun evenement critique. Les conseillers surveillent les signaux faibles.</p>
-                </div>
-              </div>
-              <div class="document-panel">
-                <div class="panel-title">
-                  <span>Journal officiel</span>
-                  <small>dernieres consequences</small>
-                </div>
-                <div id="logList" class="log-list"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="tab-panel" id="budgetPanel">
-            <div class="panel-grid">
-              <div class="document-panel wide">
-                <div class="panel-title">
-                  <span>Loi de finances dynamique</span>
-                  <small>montants en milliards EUR</small>
-                </div>
-                <div id="budgetSummary" class="budget-summary"></div>
-                <div id="budgetRows" class="budget-rows"></div>
-              </div>
-              <div class="document-panel">
-                <div class="panel-title">
-                  <span>Fiscalite</span>
-                  <small>impact social et economique</small>
-                </div>
-                <label class="tax-control">
-                  Pression fiscale
-                  <input type="range" id="taxSlider" min="34" max="54" value="45">
-                  <span id="taxLabel">45 % du PIB</span>
-                </label>
-                <div class="mini-report" id="budgetReport"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="tab-panel" id="warPanel">
-            <div class="panel-grid">
-              <div class="document-panel wide">
-                <div class="panel-title">
-                  <span>Centre de planification militaire</span>
-                  <small>fronts conventionnels, cyber et maritimes</small>
-                </div>
-                <div id="theaterList" class="theater-list"></div>
-              </div>
-              <div class="document-panel">
-                <div class="panel-title">
-                  <span>Ordres rapides</span>
-                  <small>cout politique inclus</small>
-                </div>
-                <div id="warActions" class="actions-list compact"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="tab-panel" id="diplomacyPanel">
-            <div class="panel-grid">
-              <div class="document-panel wide">
-                <div class="panel-title">
-                  <span>Agenda diplomatique</span>
-                  <small>traductions et retombees</small>
-                </div>
-                <div id="travelList" class="travel-list"></div>
-              </div>
-              <div class="document-panel">
-                <div class="panel-title">
-                  <span>Canaux ouverts</span>
-                  <small>influence internationale</small>
-                </div>
-                <div id="diplomacyReport" class="mini-report"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="tab-panel" id="cabinetPanel">
-            <div class="panel-grid">
-              <div class="document-panel wide">
-                <div class="panel-title">
-                  <span>Entourage presidentiel</span>
-                  <small>competence, loyaute, risque</small>
-                </div>
-                <div id="cabinetList" class="cabinet-list"></div>
-              </div>
-              <div class="document-panel">
-                <div class="panel-title">
-                  <span>Cabinet noir</span>
-                  <small>rumeurs et discipline</small>
-                </div>
-                <div id="cabinetReport" class="mini-report"></div>
-              </div>
+              <div id="deferredList" class="deferred-list"></div>
             </div>
           </section>
         </section>
-      </section>
-    </main>
+
+        <section id="assemblyPanel" class="tab-panel">
+          <div class="assembly-layout">
+            <section class="panel">
+              <div class="section-title">
+                <span>Assemblee nationale</span>
+                <small>577 sieges</small>
+              </div>
+              <div id="assemblyChart" class="assembly-chart"></div>
+              <div id="assemblyStats" class="stats-grid"></div>
+            </section>
+            <section class="panel">
+              <div class="section-title">
+                <span>Negociations parlementaires</span>
+                <small>le president ne vote pas les lois</small>
+              </div>
+              <div id="parliamentActions" class="action-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="budgetPanel" class="tab-panel">
+          <div class="budget-layout">
+            <section class="panel">
+              <div class="section-title">
+                <span>Loi de finances</span>
+                <small>en milliards d'euros</small>
+              </div>
+              <div id="budgetSummary" class="stats-grid"></div>
+              <div id="budgetRows" class="budget-rows"></div>
+            </section>
+            <section class="panel">
+              <div class="section-title">
+                <span>Fiscalite</span>
+                <small>promesses et arbitrages</small>
+              </div>
+              <label class="slider-label">
+                Pression fiscale
+                <input id="taxSlider" type="range" min="34" max="55" value="45">
+                <span id="taxLabel">45 % du PIB</span>
+              </label>
+              <div id="budgetAnalysis" class="analysis-box"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="actorsPanel" class="tab-panel">
+          <div class="actor-layout">
+            <section class="panel">
+              <div class="section-title">
+                <span>Institutions et forces sociales</span>
+                <small>contre-pouvoirs</small>
+              </div>
+              <div id="actorList" class="actor-list"></div>
+            </section>
+            <section class="panel">
+              <div class="section-title">
+                <span>Gouvernement</span>
+                <small>loyaute et competence</small>
+              </div>
+              <div id="governmentList" class="government-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="memoryPanel" class="tab-panel">
+          <div class="memory-layout">
+            <section class="panel">
+              <div class="section-title">
+                <span>Memoire politique</span>
+                <small>ce que les electeurs retiennent</small>
+              </div>
+              <div id="memoryList" class="memory-list"></div>
+            </section>
+            <section class="panel">
+              <div class="section-title">
+                <span>Fins possibles</span>
+                <small>trajectoire actuelle</small>
+              </div>
+              <div id="endingList" class="ending-list"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </section>
   </div>
 
-  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
-      <p class="eyebrow" id="modalKicker">Resultat</p>
-      <h2 id="modalTitle">Election</h2>
+      <p id="modalKicker" class="eyebrow">Information</p>
+      <h2 id="modalTitle">Titre</h2>
       <div id="modalBody"></div>
       <div id="modalActions" class="modal-actions"></div>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <section id="campaignAnimation" class="campaign-animation hidden" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="campaign-animation-card">
+      <p id="campaignAnimationKicker" class="eyebrow">Soir electoral</p>
+      <h2 id="campaignAnimationTitle">Resultats</h2>
+      <div id="campaignAnimationBody"></div>
+      <div class="modal-actions">
+        <button id="skipCampaignAnimationBtn" class="soft-button" type="button">Passer l'animation</button>
+        <button id="campaignAnimationPrimary" class="primary-button" type="button">Continuer</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
